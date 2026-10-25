@@ -44,6 +44,10 @@ const PLAN_SCHEMA = {
     timeline: {
       type: SchemaType.OBJECT,
       properties: {
+        isCompressed: { type: SchemaType.BOOLEAN },
+        compressionNotice: { type: SchemaType.STRING },
+        idealLeadDays: { type: SchemaType.NUMBER },
+        actualDaysRemaining: { type: SchemaType.NUMBER },
         tasks: {
           type: SchemaType.ARRAY,
           items: {
@@ -54,12 +58,28 @@ const PLAN_SCHEMA = {
               description: { type: SchemaType.STRING },
               category: { type: SchemaType.STRING },
               urgency: { type: SchemaType.STRING },
+              isRisky: { type: SchemaType.BOOLEAN },
+              riskWarning: { type: SchemaType.STRING },
             },
-            required: ["daysBeforeEvent", "label", "description", "category", "urgency"],
+            required: [
+              "daysBeforeEvent",
+              "label",
+              "description",
+              "category",
+              "urgency",
+              "isRisky",
+              "riskWarning",
+            ],
           },
         },
       },
-      required: ["tasks"],
+      required: [
+        "isCompressed",
+        "compressionNotice",
+        "idealLeadDays",
+        "actualDaysRemaining",
+        "tasks",
+      ],
     },
     vendorChecklist: {
       type: SchemaType.OBJECT,
@@ -142,7 +162,12 @@ router.post("/", async (req, res) => {
     }
 
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-    const candidateModels = ["gemini-flash-latest", "gemini-3.8-flash"];
+    const candidateModels = [
+      "gemini-3.5-flash",
+      "gemini-3.6-flash",
+      "gemini-3.5-flash-lite",
+      "gemini-flash-latest"
+    ];
     const userPrompt = buildIntakeUserPrompt(intake);
 
     let plan = null;
@@ -177,6 +202,39 @@ router.post("/", async (req, res) => {
 
     if (!plan) {
       throw lastError || new Error("Failed to generate plan from AI models.");
+    }
+
+    // Post-process timeline tasks to ensure unique IDs, calendar target dates, and clamped days
+    const eventDateObj = new Date(intake.eventDate);
+    const today = new Date();
+    const actualDaysRemaining = Math.max(0, Math.ceil((eventDateObj.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)));
+    const idealDaysMap = { wedding: 180, birthday: 45, community: 90 };
+    const idealLeadDays = idealDaysMap[intake.eventType] || 90;
+
+    if (plan.timeline) {
+      plan.timeline.actualDaysRemaining = actualDaysRemaining;
+      plan.timeline.idealLeadDays = idealLeadDays;
+      plan.timeline.isCompressed = actualDaysRemaining < idealLeadDays;
+
+      if (Array.isArray(plan.timeline.tasks)) {
+        plan.timeline.tasks = plan.timeline.tasks.map((task, idx) => {
+          const clampedDays = Math.min(actualDaysRemaining, Math.max(0, Number(task.daysBeforeEvent) || 0));
+          const targetDateObj = new Date(eventDateObj.getTime() - clampedDays * 86400000);
+          const targetDateStr = targetDateObj.toISOString().split("T")[0];
+
+          return {
+            ...task,
+            id: `task-${idx + 1}`,
+            daysBeforeEvent: clampedDays,
+            targetDate: targetDateStr,
+            urgency: task.urgency || (task.isRisky ? "CRITICAL" : "MEDIUM"),
+            isRisky: Boolean(task.isRisky),
+            riskWarning: task.riskWarning || "",
+          };
+        });
+        // Sort descending by daysBeforeEvent (T-90 -> T-60 -> T-0)
+        plan.timeline.tasks.sort((a, b) => b.daysBeforeEvent - a.daysBeforeEvent);
+      }
     }
 
     return res.json({ plan });

@@ -108,7 +108,7 @@ Open `http://localhost:5173` in your browser.
 
 - [x] **Phase 1**: Event intake form + Gemini structured JSON plan generation
 - [x] **Phase 2**: Interactive Budget Planner with Recharts pie chart, lockable categories & editable sliders
-- [ ] **Phase 3**: Countdown Timeline view with calendar integration & task completion
+- [x] **Phase 3**: Countdown Timeline view with calendar integration & task completion
 - [ ] **Phase 4**: Vendor management checklist with status tracking (Not Contacted / Quoted / Booked)
 - [ ] **Phase 5**: Conversational AI assistant for iterative adjustments ("cut budget by 15%")
 - [ ] **Phase 6**: PDF export & client presentation ready mode

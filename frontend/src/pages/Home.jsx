@@ -2,6 +2,7 @@ import React from "react";
 import IntakeForm from "../components/IntakeForm";
 import LoadingState from "../components/LoadingState";
 import BudgetPlanner from "../components/BudgetPlanner";
+import TimelineGenerator from "../components/TimelineGenerator";
 import { generatePlan } from "../api/client";
 
 const EVENT_LABELS = {
@@ -13,7 +14,7 @@ const EVENT_LABELS = {
 // ─── Tab navigation ─────────────────────────────────────────────────────────
 const TABS = [
   { id: "budget", label: "💰 Budget", phase: 2 },
-  { id: "timeline", label: "📅 Timeline", phase: 3 },
+  { id: "timeline", label: "⏳ Timeline", phase: 3 },
   { id: "vendors", label: "📋 Vendors", phase: 4 },
   { id: "ideas", label: "💡 Ideas", phase: 5 },
 ];
@@ -34,7 +35,7 @@ function TabBar({ active, onChange }) {
     >
       {TABS.map((tab) => {
         const isActive = active === tab.id;
-        const isLocked = tab.phase > 2; // phase 3+ not built yet
+        const isLocked = tab.phase > 3; // phase 4+ not built yet
         return (
           <button
             key={tab.id}
@@ -302,7 +303,12 @@ export default function Home() {
                 onUpdate={(updated) => setBudgetCats(updated)}
               />
             )}
-            {activeTab === "timeline" && <ComingSoon tab="timeline" />}
+            {activeTab === "timeline" && plan?.timeline && (
+              <TimelineGenerator
+                timeline={plan.timeline}
+                intake={intake}
+              />
+            )}
             {activeTab === "vendors" && <ComingSoon tab="vendors" />}
             {activeTab === "ideas" && <ComingSoon tab="ideas" />}
 
