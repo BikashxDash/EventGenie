@@ -3,6 +3,7 @@ import IntakeForm from "../components/IntakeForm";
 import LoadingState from "../components/LoadingState";
 import BudgetPlanner from "../components/BudgetPlanner";
 import TimelineGenerator from "../components/TimelineGenerator";
+import VendorChecklist from "../components/VendorChecklist";
 import { generatePlan } from "../api/client";
 
 const EVENT_LABELS = {
@@ -35,7 +36,7 @@ function TabBar({ active, onChange }) {
     >
       {TABS.map((tab) => {
         const isActive = active === tab.id;
-        const isLocked = tab.phase > 3; // phase 4+ not built yet
+        const isLocked = tab.phase > 4; // phase 5+ not built yet
         return (
           <button
             key={tab.id}
@@ -309,7 +310,13 @@ export default function Home() {
                 intake={intake}
               />
             )}
-            {activeTab === "vendors" && <ComingSoon tab="vendors" />}
+            {activeTab === "vendors" && plan?.vendorChecklist && (
+              <VendorChecklist
+                vendorChecklist={plan.vendorChecklist}
+                budgetCategories={budgetCats || plan.budgetAllocation?.categories || []}
+                intake={intake}
+              />
+            )}
             {activeTab === "ideas" && <ComingSoon tab="ideas" />}
 
             {/* Footer actions */}

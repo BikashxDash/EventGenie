@@ -34,11 +34,18 @@ CRITICAL RULES FOR TIMELINE GENERATION:
    - Birthday: Must include venue/lounge booking, custom theme cake & dessert counter, digital animated invites, entertainment (DJ/magician/games emcee), balloon backdrop & decor, party favors, food & mocktail bar, playlist curation.
    - Community / Fundraiser: Must include municipal/police permissions, sound/PPL licenses, sponsor deck & sponsor outreach, chief guest/speaker invitations, ticket platform/donation ledger setup, volunteer recruitment & briefings, stage/AV setup & emergency plan, press release, post-event donor receipts.
 
-4. Budget integrity:
+4. Vendor Checklist Rules:
+   - For each budget category (Venue, Catering, Decor, Photography, Entertainment, Misc/Logistics), generate:
+     * questionsToAsk: 3-5 sharp, probing screening questions tailored to the event type (wedding vs birthday vs fundraiser). E.g. wedding catering asks about food tasting, Maharaj credentials, guest buffer; birthday catering asks about kid-friendly portions, allergy handling, custom cake cutting fees; fundraiser asks about bulk pricing, volunteer meals, sponsor branding.
+     * documentsToCollect: Essential contracts, cancellation terms, insurance, FSSAI certificates, licenses.
+     * redFlags: 3 specific warning signs to watch out for during negotiations (e.g. refusing written quote, no tasting before deposit, vague overtime charges).
+   - CRITICAL RULE: NEVER invent vendor names, phone numbers, or prices.
+
+5. Budget integrity:
    - Allocation percentages MUST sum to exactly 100%.
    - Amount in INR MUST sum to exactly totalBudget.
 
-5. Respond strictly with the JSON object matching the response schema.`;
+6. Respond strictly with the JSON object matching the response schema.`;
 }
 
 export function buildIntakeUserPrompt(intake) {

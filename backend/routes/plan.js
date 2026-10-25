@@ -98,8 +98,12 @@ const PLAN_SCHEMA = {
                 type: SchemaType.ARRAY,
                 items: { type: SchemaType.STRING },
               },
+              redFlags: {
+                type: SchemaType.ARRAY,
+                items: { type: SchemaType.STRING },
+              },
             },
-            required: ["categoryName", "questionsToAsk", "documentsToCollect"],
+            required: ["categoryName", "questionsToAsk", "documentsToCollect", "redFlags"],
           },
         },
       },
@@ -235,6 +239,16 @@ router.post("/", async (req, res) => {
         // Sort descending by daysBeforeEvent (T-90 -> T-60 -> T-0)
         plan.timeline.tasks.sort((a, b) => b.daysBeforeEvent - a.daysBeforeEvent);
       }
+    }
+
+    if (plan.vendorChecklist && Array.isArray(plan.vendorChecklist.categories)) {
+      plan.vendorChecklist.categories = plan.vendorChecklist.categories.map((cat, idx) => ({
+        ...cat,
+        id: `vendor-cat-${idx + 1}`,
+        redFlags: cat.redFlags || [],
+        questionsToAsk: cat.questionsToAsk || [],
+        documentsToCollect: cat.documentsToCollect || [],
+      }));
     }
 
     return res.json({ plan });
