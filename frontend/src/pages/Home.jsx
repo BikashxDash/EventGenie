@@ -1,6 +1,7 @@
 import React from "react";
 import IntakeForm from "../components/IntakeForm";
 import LoadingState from "../components/LoadingState";
+import BudgetPlanner from "../components/BudgetPlanner";
 import { generatePlan } from "../api/client";
 
 const EVENT_LABELS = {
@@ -9,127 +10,175 @@ const EVENT_LABELS = {
   community: "🤝 Community Event",
 };
 
-function PlanPreview({ plan, intake }) {
+// ─── Tab navigation ─────────────────────────────────────────────────────────
+const TABS = [
+  { id: "budget", label: "💰 Budget", phase: 2 },
+  { id: "timeline", label: "📅 Timeline", phase: 3 },
+  { id: "vendors", label: "📋 Vendors", phase: 4 },
+  { id: "ideas", label: "💡 Ideas", phase: 5 },
+];
+
+function TabBar({ active, onChange }) {
   return (
-    <div className="fade-in-up" style={{ maxWidth: 760, margin: "0 auto" }}>
-      {/* Success banner */}
-      <div
-        className="glass-card"
-        style={{
-          padding: "28px 32px",
-          marginBottom: 24,
-          borderColor: "rgba(16,185,129,0.3)",
-          background: "rgba(16,185,129,0.05)",
-        }}
-      >
-        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-          <div className="pulse-dot" />
-          <span style={{ fontFamily: "Outfit,sans-serif", fontWeight: 700, fontSize: "1.1rem" }}>
-            ✅ EventGenie plan generated successfully!
-          </span>
-        </div>
-        <p style={{ color: "var(--color-text-muted)", marginTop: 8, fontSize: "0.9rem" }}>
-          Phase 1 test — raw AI JSON verified. Budget planner, timeline, and more coming in
-          Phase 2+.
+    <div
+      style={{
+        display: "flex",
+        gap: 4,
+        background: "rgba(255,255,255,0.04)",
+        border: "1px solid var(--color-border)",
+        borderRadius: 14,
+        padding: 4,
+        marginBottom: 32,
+        overflowX: "auto",
+      }}
+    >
+      {TABS.map((tab) => {
+        const isActive = active === tab.id;
+        const isLocked = tab.phase > 2; // phase 3+ not built yet
+        return (
+          <button
+            key={tab.id}
+            onClick={() => !isLocked && onChange(tab.id)}
+            disabled={isLocked}
+            style={{
+              flex: "0 0 auto",
+              padding: "10px 20px",
+              borderRadius: 10,
+              border: "none",
+              background: isActive
+                ? "linear-gradient(135deg, var(--color-primary), #9f7aea)"
+                : "transparent",
+              color: isLocked
+                ? "rgba(255,255,255,0.2)"
+                : isActive
+                ? "#fff"
+                : "var(--color-text-muted)",
+              fontFamily: "Outfit,sans-serif",
+              fontWeight: 600,
+              fontSize: "0.88rem",
+              cursor: isLocked ? "not-allowed" : "pointer",
+              transition: "all 0.2s",
+              whiteSpace: "nowrap",
+              boxShadow: isActive
+                ? "0 4px 16px rgba(124,92,252,0.35)"
+                : "none",
+              position: "relative",
+            }}
+            id={`tab-${tab.id}`}
+          >
+            {tab.label}
+            {isLocked && (
+              <span
+                style={{
+                  marginLeft: 6,
+                  fontSize: "0.65rem",
+                  background: "rgba(255,255,255,0.1)",
+                  borderRadius: 4,
+                  padding: "1px 5px",
+                }}
+              >
+                Soon
+              </span>
+            )}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+// ─── Event summary cards ────────────────────────────────────────────────────
+function EventSummary({ plan, intake }) {
+  const { eventSummary } = plan;
+  return (
+    <div className="glass-card fade-in-up" style={{ padding: "28px 32px", marginBottom: 24 }}>
+      <div style={{ marginBottom: 20 }}>
+        <h2
+          style={{
+            fontFamily: "Outfit,sans-serif",
+            fontSize: "1.5rem",
+            fontWeight: 800,
+            marginBottom: 6,
+          }}
+          className="gradient-text"
+        >
+          {eventSummary.title}
+        </h2>
+        <p style={{ color: "var(--color-text-muted)", fontSize: "0.95rem", fontStyle: "italic" }}>
+          "{eventSummary.tagline}"
         </p>
       </div>
 
-      {/* Meta */}
-      <div className="glass-card" style={{ padding: "28px 32px", marginBottom: 20 }}>
-        <h3
-          style={{
-            fontFamily: "Outfit,sans-serif",
-            fontWeight: 700,
-            fontSize: "1.2rem",
-            marginBottom: 20,
-          }}
-        >
-          📋 Event Summary
-        </h3>
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))",
-            gap: 16,
-          }}
-        >
-          {[
-            { label: "Event Type", value: EVENT_LABELS[intake.eventType] || intake.eventType },
-            { label: "Date", value: new Date(intake.eventDate).toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" }) },
-            { label: "City", value: intake.city },
-            { label: "Guests", value: intake.guestCount.toLocaleString("en-IN") },
-            { label: "Budget", value: `₹${intake.totalBudget.toLocaleString("en-IN")}` },
-            { label: "Vibe", value: intake.vibe },
-          ].map(({ label, value }) => (
-            <div
-              key={label}
-              style={{
-                padding: "14px 16px",
-                background: "rgba(255,255,255,0.03)",
-                borderRadius: 12,
-                border: "1px solid var(--color-border)",
-              }}
-            >
-              <div
-                style={{
-                  fontSize: "0.72rem",
-                  fontWeight: 600,
-                  color: "var(--color-text-muted)",
-                  textTransform: "uppercase",
-                  letterSpacing: "0.08em",
-                  marginBottom: 4,
-                }}
-              >
-                {label}
-              </div>
-              <div style={{ fontWeight: 600, fontSize: "0.95rem" }}>{value}</div>
-            </div>
-          ))}
-        </div>
+      {/* Highlights */}
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 24 }}>
+        {eventSummary.highlights?.map((h, i) => (
+          <span key={i} className="chip">
+            ✦ {h}
+          </span>
+        ))}
       </div>
 
-      {/* Raw JSON preview */}
-      <div className="glass-card" style={{ padding: "28px 32px" }}>
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            marginBottom: 16,
-          }}
-        >
-          <h3
-            style={{ fontFamily: "Outfit,sans-serif", fontWeight: 700, fontSize: "1.1rem" }}
+      {/* Meta grid */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(160px,1fr))", gap: 12 }}>
+        {[
+          { label: "Event Type", value: EVENT_LABELS[intake.eventType] || intake.eventType },
+          { label: "Date", value: new Date(intake.eventDate).toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" }) },
+          { label: "City", value: intake.city },
+          { label: "Guests", value: intake.guestCount.toLocaleString("en-IN") },
+          { label: "Budget", value: `₹${intake.totalBudget.toLocaleString("en-IN")}` },
+          { label: "Vibe", value: intake.vibe },
+        ].map(({ label, value }) => (
+          <div
+            key={label}
+            style={{
+              padding: "12px 14px",
+              background: "rgba(255,255,255,0.03)",
+              borderRadius: 10,
+              border: "1px solid var(--color-border)",
+            }}
           >
-            🤖 AI Response (Structured JSON)
-          </h3>
-          <span className="chip">Phase 1 Debug View</span>
-        </div>
-        <pre
-          style={{
-            background: "rgba(0,0,0,0.4)",
-            borderRadius: 12,
-            padding: 20,
-            fontSize: "0.78rem",
-            color: "#a5f3fc",
-            overflowX: "auto",
-            lineHeight: 1.6,
-            maxHeight: 500,
-            overflowY: "auto",
-          }}
-        >
-          {JSON.stringify(plan, null, 2)}
-        </pre>
+            <div style={{ fontSize: "0.7rem", fontWeight: 600, color: "var(--color-text-muted)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 3 }}>
+              {label}
+            </div>
+            <div style={{ fontWeight: 600, fontSize: "0.9rem" }}>{value}</div>
+          </div>
+        ))}
       </div>
     </div>
   );
 }
 
+// ─── Coming-soon placeholder ────────────────────────────────────────────────
+function ComingSoon({ tab }) {
+  const info = {
+    timeline: { icon: "📅", phase: 3, title: "Timeline Generator" },
+    vendors: { icon: "📋", phase: 4, title: "Vendor Checklist" },
+    ideas: { icon: "💡", phase: 5, title: "Personalised Ideas & Chat" },
+  }[tab] || {};
+  return (
+    <div
+      className="glass-card"
+      style={{ padding: "60px 40px", textAlign: "center" }}
+    >
+      <div style={{ fontSize: "3.5rem", marginBottom: 16 }}>{info.icon}</div>
+      <h3 style={{ fontFamily: "Outfit,sans-serif", fontWeight: 700, fontSize: "1.3rem", marginBottom: 8 }}>
+        {info.title}
+      </h3>
+      <p style={{ color: "var(--color-text-muted)" }}>
+        Coming in Phase {info.phase} — say <strong style={{ color: "var(--color-primary-light)" }}>"go"</strong> to build it!
+      </p>
+    </div>
+  );
+}
+
+// ─── Main page ──────────────────────────────────────────────────────────────
 export default function Home() {
-  const [state, setState] = React.useState("idle"); // idle | loading | result | error
+  const [state, setState] = React.useState("idle");
   const [plan, setPlan] = React.useState(null);
   const [intake, setIntake] = React.useState(null);
   const [errorMsg, setErrorMsg] = React.useState("");
+  const [activeTab, setActiveTab] = React.useState("budget");
+  const [budgetCats, setBudgetCats] = React.useState(null);
 
   async function handleSubmit(formData) {
     setState("loading");
@@ -137,7 +186,9 @@ export default function Home() {
     try {
       const result = await generatePlan(formData);
       setPlan(result.plan);
+      setBudgetCats(result.plan.budgetAllocation?.categories || []);
       setIntake(formData);
+      setActiveTab("budget");
       setState("result");
     } catch (err) {
       const msg =
@@ -154,19 +205,14 @@ export default function Home() {
     setPlan(null);
     setIntake(null);
     setErrorMsg("");
+    setBudgetCats(null);
   }
 
   return (
     <div style={{ position: "relative", minHeight: "100vh", zIndex: 1 }}>
-      {/* Page header */}
-      <header
-        style={{
-          padding: "32px 24px 0",
-          textAlign: "center",
-          marginBottom: 48,
-        }}
-      >
-        <div style={{ marginBottom: 16 }}>
+      {/* ── Page header ── */}
+      <header style={{ padding: "32px 24px 0", textAlign: "center", marginBottom: 40 }}>
+        <div style={{ marginBottom: 14 }}>
           <span
             style={{
               display: "inline-flex",
@@ -188,11 +234,11 @@ export default function Home() {
         <h1
           className="shine-text"
           style={{
-            fontFamily: "Outfit, sans-serif",
-            fontSize: "clamp(2.4rem, 6vw, 4rem)",
+            fontFamily: "Outfit,sans-serif",
+            fontSize: "clamp(2.4rem,6vw,4rem)",
             fontWeight: 800,
             lineHeight: 1.15,
-            marginBottom: 16,
+            marginBottom: 14,
           }}
         >
           EventGenie ✨
@@ -211,8 +257,8 @@ export default function Home() {
         </p>
       </header>
 
-      {/* Main content */}
-      <main style={{ padding: "0 24px 80px" }}>
+      {/* ── Main ── */}
+      <main style={{ padding: "0 24px 80px", maxWidth: 1100, margin: "0 auto" }}>
         {state === "idle" && (
           <IntakeForm onSubmit={handleSubmit} isLoading={false} />
         )}
@@ -223,53 +269,46 @@ export default function Home() {
           <div
             className="glass-card fade-in-up"
             style={{
-              maxWidth: 540,
-              margin: "60px auto",
-              padding: "48px 40px",
-              textAlign: "center",
-              borderColor: "rgba(239,68,68,0.3)",
+              maxWidth: 540, margin: "60px auto", padding: "48px 40px",
+              textAlign: "center", borderColor: "rgba(239,68,68,0.3)",
             }}
           >
             <div style={{ fontSize: "3rem", marginBottom: 16 }}>😞</div>
-            <h3
-              style={{
-                fontFamily: "Outfit,sans-serif",
-                fontWeight: 700,
-                fontSize: "1.3rem",
-                marginBottom: 12,
-                color: "var(--color-error)",
-              }}
-            >
+            <h3 style={{ fontFamily: "Outfit,sans-serif", fontWeight: 700, fontSize: "1.3rem", marginBottom: 12, color: "var(--color-error)" }}>
               Oops! Something went wrong.
             </h3>
-            <p
-              style={{
-                color: "var(--color-text-muted)",
-                marginBottom: 32,
-                lineHeight: 1.6,
-              }}
-            >
+            <p style={{ color: "var(--color-text-muted)", marginBottom: 32, lineHeight: 1.6 }}>
               {errorMsg}
             </p>
-            <button
-              onClick={handleReset}
-              className="btn-primary"
-              id="error-try-again-btn"
-            >
+            <button onClick={handleReset} className="btn-primary" id="error-try-again-btn">
               ↩ Try Again
             </button>
           </div>
         )}
 
         {state === "result" && plan && (
-          <div>
-            <PlanPreview plan={plan} intake={intake} />
-            <div style={{ textAlign: "center", marginTop: 40 }}>
-              <button
-                onClick={handleReset}
-                className="btn-secondary"
-                id="plan-another-event-btn"
-              >
+          <div className="fade-in-up">
+            {/* Event summary always visible */}
+            <EventSummary plan={plan} intake={intake} />
+
+            {/* Tab bar */}
+            <TabBar active={activeTab} onChange={setActiveTab} />
+
+            {/* Tab content */}
+            {activeTab === "budget" && budgetCats && (
+              <BudgetPlanner
+                categories={budgetCats}
+                totalBudget={intake.totalBudget}
+                onUpdate={(updated) => setBudgetCats(updated)}
+              />
+            )}
+            {activeTab === "timeline" && <ComingSoon tab="timeline" />}
+            {activeTab === "vendors" && <ComingSoon tab="vendors" />}
+            {activeTab === "ideas" && <ComingSoon tab="ideas" />}
+
+            {/* Footer actions */}
+            <div style={{ textAlign: "center", marginTop: 48 }}>
+              <button onClick={handleReset} className="btn-secondary" id="plan-another-event-btn">
                 ← Plan Another Event
               </button>
             </div>
