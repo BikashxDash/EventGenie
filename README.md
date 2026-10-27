@@ -110,5 +110,23 @@ Open `http://localhost:5173` in your browser.
 - [x] **Phase 2**: Interactive Budget Planner with Recharts pie chart, lockable categories & editable sliders
 - [x] **Phase 3**: Countdown Timeline view with calendar integration & task completion
 - [x] **Phase 4**: Vendor management checklist with status tracking (Not Contacted / Quoted / Booked)
-- [ ] **Phase 5**: Conversational AI assistant for iterative adjustments ("cut budget by 15%")
+- [x] **Phase 5**: Personalized Ideas (5 per section, regeneration, favorites) + AI Co-Planner Chat Assistant with live plan modification & Undo
 - [ ] **Phase 6**: PDF export & client presentation ready mode
+
+---
+
+## 💡 Phase 5 Highlights: Ideas & AI Co-Planner
+
+### 1. Personalized Ideas Hub
+- **4 Rich Categories**: Thematic Concepts, Decor & Ambience, Catering & Menu, and Guest Activities & Entertainment.
+- **Dietary Strictness**: Catering menu strictly adheres to dietary preferences (Pure Vegetarian, Jain, Vegan, Halal).
+- **Per-Section Regeneration**: Independent `🔄 Regenerate` buttons call `/api/plan/regenerate-section` to refresh only specific sections.
+- **Favorites & Persistence**: Star favorite ideas across categories, persisted in `localStorage` with a dedicated `⭐ Saved` filter.
+
+### 2. Conversational AI Co-Planner
+- **Active Plan Awareness**: Real-time context of budget allocations, countdown timeline, vendor quotes, and idea cards.
+- **Structured Plan Mutations**: Executes real state updates, not just conversational text:
+  - *"cut the budget by 20%"*: Proportionally scales category amounts and ensures exact mathematical consistency.
+  - *"make it vegetarian"*: Updates dietary preference, regenerates catering ideas with gourmet vegetarian concepts, and adjusts catering notes.
+  - *"move the event 2 weeks earlier"*: Recalculates event date, updates timeline milestones, triggers rush compression if needed.
+- **Before/After Diff & Undo**: Displays structured comparison badges and an interactive `↩ Undo` button to immediately revert any change.

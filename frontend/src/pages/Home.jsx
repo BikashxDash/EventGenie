@@ -4,6 +4,8 @@ import LoadingState from "../components/LoadingState";
 import BudgetPlanner from "../components/BudgetPlanner";
 import TimelineGenerator from "../components/TimelineGenerator";
 import VendorChecklist from "../components/VendorChecklist";
+import PersonalizedIdeas from "../components/PersonalizedIdeas";
+import ChatAssistant from "../components/ChatAssistant";
 import { generatePlan } from "../api/client";
 
 const EVENT_LABELS = {
@@ -36,7 +38,7 @@ function TabBar({ active, onChange }) {
     >
       {TABS.map((tab) => {
         const isActive = active === tab.id;
-        const isLocked = tab.phase > 4; // phase 5+ not built yet
+        const isLocked = tab.phase > 5; // Phase 5 unlocked
         return (
           <button
             key={tab.id}
@@ -69,19 +71,6 @@ function TabBar({ active, onChange }) {
             id={`tab-${tab.id}`}
           >
             {tab.label}
-            {isLocked && (
-              <span
-                style={{
-                  marginLeft: 6,
-                  fontSize: "0.65rem",
-                  background: "rgba(255,255,255,0.1)",
-                  borderRadius: 4,
-                  padding: "1px 5px",
-                }}
-              >
-                Soon
-              </span>
-            )}
           </button>
         );
       })}
@@ -129,6 +118,7 @@ function EventSummary({ plan, intake }) {
           { label: "Guests", value: intake.guestCount.toLocaleString("en-IN") },
           { label: "Budget", value: `₹${intake.totalBudget.toLocaleString("en-IN")}` },
           { label: "Vibe", value: intake.vibe },
+          { label: "Dietary", value: intake.dietaryPrefs || "Standard" },
         ].map(({ label, value }) => (
           <div
             key={label}
@@ -150,29 +140,6 @@ function EventSummary({ plan, intake }) {
   );
 }
 
-// ─── Coming-soon placeholder ────────────────────────────────────────────────
-function ComingSoon({ tab }) {
-  const info = {
-    timeline: { icon: "📅", phase: 3, title: "Timeline Generator" },
-    vendors: { icon: "📋", phase: 4, title: "Vendor Checklist" },
-    ideas: { icon: "💡", phase: 5, title: "Personalised Ideas & Chat" },
-  }[tab] || {};
-  return (
-    <div
-      className="glass-card"
-      style={{ padding: "60px 40px", textAlign: "center" }}
-    >
-      <div style={{ fontSize: "3.5rem", marginBottom: 16 }}>{info.icon}</div>
-      <h3 style={{ fontFamily: "Outfit,sans-serif", fontWeight: 700, fontSize: "1.3rem", marginBottom: 8 }}>
-        {info.title}
-      </h3>
-      <p style={{ color: "var(--color-text-muted)" }}>
-        Coming in Phase {info.phase} — say <strong style={{ color: "var(--color-primary-light)" }}>"go"</strong> to build it!
-      </p>
-    </div>
-  );
-}
-
 // ─── Main page ──────────────────────────────────────────────────────────────
 export default function Home() {
   const [state, setState] = React.useState("idle");
@@ -181,6 +148,9 @@ export default function Home() {
   const [errorMsg, setErrorMsg] = React.useState("");
   const [activeTab, setActiveTab] = React.useState("budget");
   const [budgetCats, setBudgetCats] = React.useState(null);
+
+  // History stack for undo functionality across plan & intake modifications
+  const [historyStack, setHistoryStack] = React.useState([]);
 
   async function handleSubmit(formData) {
     setState("loading");
@@ -191,6 +161,7 @@ export default function Home() {
       setBudgetCats(result.plan.budgetAllocation?.categories || []);
       setIntake(formData);
       setActiveTab("budget");
+      setHistoryStack([]);
       setState("result");
     } catch (err) {
       const msg =
@@ -208,6 +179,49 @@ export default function Home() {
     setIntake(null);
     setErrorMsg("");
     setBudgetCats(null);
+    setHistoryStack([]);
+  }
+
+  function handleBudgetUpdate(updatedCats) {
+    setBudgetCats(updatedCats);
+    setPlan((prev) => ({
+      ...prev,
+      budgetAllocation: {
+        ...prev.budgetAllocation,
+        categories: updatedCats,
+      },
+    }));
+  }
+
+  // Handle plan updates applied by the Chat Co-Planner
+  function handleApplyPlanUpdate({ updatedPlan, updatedIntake, changeSummary, actionType }) {
+    // Snapshot current state into undo history
+    setHistoryStack((prev) => [
+      ...prev,
+      {
+        plan: JSON.parse(JSON.stringify(plan)),
+        intake: JSON.parse(JSON.stringify(intake)),
+        budgetCats: JSON.parse(JSON.stringify(budgetCats || [])),
+        changeSummary,
+        actionType,
+      },
+    ]);
+
+    setPlan(updatedPlan);
+    setIntake(updatedIntake);
+    if (updatedPlan.budgetAllocation?.categories) {
+      setBudgetCats(updatedPlan.budgetAllocation.categories);
+    }
+  }
+
+  // Handle undo action
+  function handleUndo() {
+    if (historyStack.length === 0) return;
+    const lastSnapshot = historyStack[historyStack.length - 1];
+    setPlan(lastSnapshot.plan);
+    setIntake(lastSnapshot.intake);
+    setBudgetCats(lastSnapshot.budgetCats);
+    setHistoryStack((prev) => prev.slice(0, -1));
   }
 
   return (
@@ -301,7 +315,7 @@ export default function Home() {
               <BudgetPlanner
                 categories={budgetCats}
                 totalBudget={intake.totalBudget}
-                onUpdate={(updated) => setBudgetCats(updated)}
+                onUpdate={handleBudgetUpdate}
               />
             )}
             {activeTab === "timeline" && plan?.timeline && (
@@ -317,7 +331,30 @@ export default function Home() {
                 intake={intake}
               />
             )}
-            {activeTab === "ideas" && <ComingSoon tab="ideas" />}
+            {activeTab === "ideas" && plan?.personalizedIdeas && (
+              <PersonalizedIdeas
+                ideas={plan.personalizedIdeas}
+                intake={intake}
+                onUpdateSection={(sectionKey, newIdeas) => {
+                  setPlan((prev) => ({
+                    ...prev,
+                    personalizedIdeas: {
+                      ...prev.personalizedIdeas,
+                      [sectionKey]: newIdeas,
+                    },
+                  }));
+                }}
+              />
+            )}
+
+            {/* AI Co-Planner Floating Assistant (synchronised with plan) */}
+            <ChatAssistant
+              currentPlan={plan}
+              intake={intake}
+              onApplyPlanUpdate={handleApplyPlanUpdate}
+              onUndo={handleUndo}
+              canUndo={historyStack.length > 0}
+            />
 
             {/* Footer actions */}
             <div style={{ textAlign: "center", marginTop: 48 }}>

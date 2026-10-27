@@ -41,11 +41,19 @@ CRITICAL RULES FOR TIMELINE GENERATION:
      * redFlags: 3 specific warning signs to watch out for during negotiations (e.g. refusing written quote, no tasting before deposit, vague overtime charges).
    - CRITICAL RULE: NEVER invent vendor names, phone numbers, or prices.
 
-5. Budget integrity:
+5. Personalized Ideas Rules:
+   - Generate exactly 5 ideas each for:
+     * themes: 5 creative thematic concepts tailored to event type, vibe, city, and cultural heritage.
+     * decorIdeas: 5 sensory decor setups (color palettes, floral/lighting arrangements, statement backdrops).
+     * menuIdeas: 5 curated dish/course/station concepts. STRICT DIETARY RULE: Must strictly respect the intake dietary preferences (e.g. Pure Vegetarian, Jain, Vegan, Halal). Never violate dietary restrictions.
+     * activityIdeas: 5 interactive activities, rituals, or entertainment experiences suited to the guest profile.
+   - For every idea, provide a clear 'title', 'description', and a relevant 'tag'.
+
+6. Budget integrity:
    - Allocation percentages MUST sum to exactly 100%.
    - Amount in INR MUST sum to exactly totalBudget.
 
-6. Respond strictly with the JSON object matching the response schema.`;
+7. Respond strictly with the JSON object matching the response schema.`;
 }
 
 export function buildIntakeUserPrompt(intake) {
