@@ -43,7 +43,7 @@ function FieldError({ message }) {
   return <p className="form-error">⚠ {message}</p>;
 }
 
-export default function IntakeForm({ onSubmit, isLoading }) {
+export default function IntakeForm({ onSubmit, isLoading, onLoadSample }) {
   const [form, setForm] = React.useState({
     eventType: "",
     eventDate: "",
@@ -104,6 +104,62 @@ export default function IntakeForm({ onSubmit, isLoading }) {
       className="glass-card p-8 md:p-12 fade-in-up"
       style={{ maxWidth: 760, margin: "0 auto" }}
     >
+      {/* ── Offline Demo Bar ── */}
+      <div
+        style={{
+          background: "rgba(124, 92, 252, 0.08)",
+          border: "1px solid rgba(124, 92, 252, 0.25)",
+          borderRadius: 12,
+          padding: "14px 18px",
+          marginBottom: 32,
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          flexWrap: "wrap",
+          gap: 12,
+        }}
+      >
+        <div>
+          <div style={{ fontSize: "0.85rem", fontWeight: 700, color: "#fff", display: "flex", alignItems: "center", gap: 6 }}>
+            <span>⚡</span>
+            <span>Instant Demo Mode (No API Call)</span>
+          </div>
+          <div style={{ fontSize: "0.75rem", color: "var(--color-text-muted)" }}>
+            Explore pre-generated blueprints immediately even offline:
+          </div>
+        </div>
+
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+          <button
+            type="button"
+            id="quick-demo-wedding"
+            onClick={() => onLoadSample && onLoadSample("wedding")}
+            className="chip"
+            style={{ cursor: "pointer", border: "1px solid rgba(124, 92, 252, 0.35)", background: "rgba(124, 92, 252, 0.15)" }}
+          >
+            💍 Jaipur Wedding (₹25L)
+          </button>
+          <button
+            type="button"
+            id="quick-demo-birthday"
+            onClick={() => onLoadSample && onLoadSample("birthday")}
+            className="chip"
+            style={{ cursor: "pointer", border: "1px solid rgba(236, 72, 153, 0.35)", background: "rgba(236, 72, 153, 0.15)" }}
+          >
+            🎂 21st Birthday (₹3.5L)
+          </button>
+          <button
+            type="button"
+            id="quick-demo-community"
+            onClick={() => onLoadSample && onLoadSample("community")}
+            className="chip"
+            style={{ cursor: "pointer", border: "1px solid rgba(16, 185, 129, 0.35)", background: "rgba(16, 185, 129, 0.15)" }}
+          >
+            🌍 Charity Gala (₹12L)
+          </button>
+        </div>
+      </div>
+
       {/* ── Header ── */}
       <div style={{ marginBottom: 40, textAlign: "center" }}>
         <span
